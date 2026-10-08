@@ -264,7 +264,7 @@ table.mini td:last-child{text-align:right;font-family:var(--mono);font-weight:70
    ===================================================================== */
 
 /* ------------------------- CATÁLOGOS EDITABLES ---------------------- */
-const APP_VERSION = 'v27 · 11 sep 2026 · portada';
+const APP_VERSION = 'v28 · 8 oct 2026 · ya levantado previamente';
 
 const CAT = {
   patios: ["Patio HT (Monterrey)","Patio JJ (Monterrey)","Monterrey - Forza","Monterrey - Tractomundo",
@@ -515,6 +515,7 @@ function itemEquipo(e){
     <div class="foot">
       <span class="tag ${tags[0]}">${tags[1]}</span>
       ${e.origen==='padron'?'':'<span class="tag t-exc">Manual</span>'}
+      ${e.padron && e.padron.previo ? '<span class="tag t-enc">Ya levantado antes</span>' : ''}
       <span class="sp"></span>
       <span class="count">${na} adic · ${nf} fotos</span>
     </div></button>`;
@@ -797,6 +798,7 @@ function pintarFicha(){
       <label>NIV (17 caracteres)</label>
       <input class="mono" id="fNiv" value="${esc(e.niv)}" maxlength="24" autocapitalize="characters" placeholder="3H3V532C0PT123456">
       <div id="fNivAviso"></div>
+      <div id="fPrevio"></div>
       ${e.origen==='manual' ? `<button class="btn sm ghost" style="margin-top:6px" onclick="sinNivLegible()">No se distingue el NIV</button>` : ''}
       <label>Placas</label>
       <input id="fPlacas" value="${esc(e.placas)}" autocapitalize="characters">
@@ -854,9 +856,81 @@ function pintarFicha(){
     <div style="height:24px"></div>`;
   $('#fNiv').oninput = ev => {
     const v = ev.target.value.toUpperCase().replace(/[^A-Z0-9-]/g,''); ev.target.value = v;
-    if(v.startsWith('SIN-NIV')){ $('#fNivAviso').innerHTML = ''; return; }
+    if(v.startsWith('SIN-NIV')){ $('#fNivAviso').innerHTML = ''; $('#fPrevio').innerHTML = ''; return; }
     $('#fNivAviso').innerHTML = v && v.length!==17 ? `<div class="hint" style="color:var(--warn)">Lleva ${v.length} de 17 caracteres.</div>` : '';
+    if(v.length===17) revisarPrevio(); else $('#fPrevio').innerHTML = '';
   };
+  if((e.niv||'').length===17) revisarPrevio();
+}
+
+/* ============ EQUIPOS YA LEVANTADOS EN LEVANTAMIENTOS ANTERIORES ============
+   Al capturar un NIV se busca en la nube si ya fue levantado antes (encontrado
+   o excedente, de cualquier levantamiento). Si sí: se avisa y, con un botón, se
+   marca "ya encontrado previamente" sin volver a levantarlo; sus fotos
+   anteriores ya están en Imágenes HT. Si no: es un equipo nuevo y sus fotos de
+   este levantamiento entran solas al repositorio al sincronizar. */
+const PREVIOS = {};   // niv -> {fecha, nombre, fotos, ...} | null  (caché de la sesión)
+async function buscarPrevio(niv){
+  if(!niv || niv.startsWith('SIN-NIV') || niv.length!==17) return null;
+  if(niv in PREVIOS) return PREVIOS[niv];
+  if(!SB || !SESION_NUBE || !navigator.onLine) return undefined;       // sin red: no se puede saber
+  let q = SB.from('equipos')
+    .select('id,niv,estado,patio,clasificacion,tipo,marca,anio,placas,ejes,medida_llantas,zona,estatus_fisico,adicionales,levantamiento_id,actualizado_en')
+    .eq('niv', niv).in('estado',['encontrado','excedente'])
+    .order('actualizado_en',{ascending:false}).limit(10);
+  if(LEV) q = q.neq('levantamiento_id', LEV);
+  const { data, error } = await q;
+  if(error) return undefined;
+  if(!data || !data.length){ PREVIOS[niv] = null; return null; }
+  const ids = data.map(r=>r.id);
+  const { data: fts } = await SB.from('fotos').select('equipo_id').in('equipo_id', ids);
+  const fotos = (fts||[]).length;
+  const reg = data[0];
+  const { data: lv } = await SB.from('levantamientos').select('nombre,fecha').eq('id', reg.levantamiento_id).maybeSingle();
+  PREVIOS[niv] = { reg, fotos, nombre: lv ? lv.nombre : '', fecha: (lv && lv.fecha) || String(reg.actualizado_en||'').slice(0,10) };
+  return PREVIOS[niv];
+}
+function fechaCorta(f){
+  const d = new Date(String(f).slice(0,10)+'T12:00:00');
+  return isNaN(d) ? String(f||'') : d.toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'});
+}
+async function revisarPrevio(){
+  const box = $('#fPrevio'); const inp = $('#fNiv'); const e = fichaActual();
+  if(!box || !inp || !e) return;
+  const niv = inp.value;
+  if(niv.length!==17){ box.innerHTML = ''; return; }
+  const p = await buscarPrevio(niv);
+  if(!$('#fNiv') || $('#fNiv').value!==niv || S.fichaId!==e.id) return;   // cambió mientras consultaba
+  const hecho = !!(e.padron && e.padron.previo);
+  if(p===undefined){ box.innerHTML = ''; return; }                        // sin red o sin sesión en la nube
+  if(p===null){
+    box.innerHTML = `<div class="banner b-warn" style="margin:8px 0 0">Este NIV <b>no se ha levantado antes</b>: es equipo nuevo. Toma sus fotos para que entren al repositorio de Imágenes HT al sincronizar.</div>`;
+    return;
+  }
+  const info = `Ya levantado el <b>${esc(fechaCorta(p.fecha))}</b>${p.nombre?' · '+esc(p.nombre):''}${p.reg.patio?' · '+esc(p.reg.patio):''} · <b>${p.fotos}</b> fotos ya en Imágenes HT.`;
+  box.innerHTML = hecho
+    ? `<div class="banner b-info" style="margin:8px 0 0">✔ Marcado como <b>ya encontrado previamente</b>. ${info}</div>`
+    : `<div class="banner b-info" style="margin:8px 0 0">${info}
+         ${e.estado==='encontrado' ? '' : `<button class="btn ok wide" style="margin-top:8px" onclick="marcarYaEncontrado()">Marcar como ya encontrado previamente</button>`}</div>`;
+}
+async function marcarYaEncontrado(){
+  const e = leerCampos(); if(!e || !e.niv){ toast('Captura el NIV del equipo'); return; }
+  const p = await buscarPrevio(e.niv);
+  if(!p){ toast('No se encontró un levantamiento previo de este NIV'); return; }
+  const r = p.reg;
+  const llenar = (k, v) => { if(!e[k] && v) e[k] = v; };                // solo completa lo que falta
+  llenar('tipo', r.tipo); llenar('marca', r.marca); llenar('anio', r.anio); llenar('placas', r.placas);
+  llenar('ejes', r.ejes); llenar('medidaLlantas', r.medida_llantas); llenar('clasificacion', r.clasificacion);
+  llenar('zona', r.zona); llenar('estatusFisico', r.estatus_fisico); llenar('patioFisico', r.patio);
+  if(!e.adicionales.length && Array.isArray(r.adicionales)) e.adicionales = r.adicionales.map(a=>({...a}));
+  const nota = `Ya levantado previamente (${fechaCorta(p.fecha)})`;
+  if(!e.obs.includes('Ya levantado previamente')) e.obs = (e.obs ? e.obs+' · ' : '') + nota;
+  e.padron = Object.assign({}, e.padron, {previo:{fecha:p.fecha, levantamiento:p.nombre, fotos:p.fotos}});
+  e.estado = (e.origen==='padron') ? 'encontrado' : 'excedente'; e.ts = stamp();
+  e.capturadoPor = usuarioActual() || e.capturadoPor;
+  await putEquipo(e);
+  $('#sheetEquipo').classList.remove('open'); document.body.style.overflow=''; S.fichaId=null; render();
+  toast('Marcado como ya encontrado previamente');
 }
 /* Los patios salen del propio levantamiento: nada de texto libre que
    termine escrito de tres formas distintas. */
