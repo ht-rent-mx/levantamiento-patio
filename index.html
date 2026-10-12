@@ -264,7 +264,7 @@ table.mini td:last-child{text-align:right;font-family:var(--mono);font-weight:70
    ===================================================================== */
 
 /* ------------------------- CATÁLOGOS EDITABLES ---------------------- */
-const APP_VERSION = 'v31 · 12 oct 2026 · padrón desde el inventario';
+const APP_VERSION = 'v32 · 12 oct 2026 · padrón desde Plataforma HT';
 
 const CAT = {
   patios: ["Patio HT (Monterrey)","Patio JJ (Monterrey)","Monterrey - Forza","Monterrey - Tractomundo",
@@ -1362,7 +1362,7 @@ $('#fileExcel').onchange = async ev => {
    los equipos cuyo estatus de entrega NO es ENTREGADO. Valida la sesión de la nube
    de esta app. Los patios salen del campo Ubicación del inventario. Después sigue el
    mismo flujo que con Excel: Paso 1 patios, Paso 2 reglas por patio, crear levantamiento. */
-const INV_FN = 'https://qqusajxzcyyfuvhslexe.supabase.co/functions/v1/padron-levantamiento';
+const INV_FN = 'https://ahfjstuwekcuxshclprl.supabase.co/functions/v1/padron-levantamiento';   // base de Plataforma HT (la vigente)
 let PADRON_FUENTE = '';
 async function traerDelInventario(){
   if(!SB || !SESION_NUBE){ toast('Primero inicia sesión en la nube (tarjeta Nube, arriba)', 4000); return; }
