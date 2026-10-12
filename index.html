@@ -264,7 +264,7 @@ table.mini td:last-child{text-align:right;font-family:var(--mono);font-weight:70
    ===================================================================== */
 
 /* ------------------------- CATÁLOGOS EDITABLES ---------------------- */
-const APP_VERSION = 'v28 · 8 oct 2026 · ya levantado previamente';
+const APP_VERSION = 'v29 · 12 oct 2026 · sin duplicados y patio unificado';
 
 const CAT = {
   patios: ["Patio HT (Monterrey)","Patio JJ (Monterrey)","Monterrey - Forza","Monterrey - Tractomundo",
@@ -753,7 +753,7 @@ async function borrarHuerfanas(ref){
 
 async function guardarDatosSesion(){
   recordar('patios', $('#sPatio').value.trim());
-  S.sesion = { patio:$('#sPatio').value.trim(), fecha:$('#sFecha').value||hoy(),
+  S.sesion = { patio:$('#sPatio').value.split(' + ').map(p=>patioCanonico(p.trim())).filter(Boolean).join(' + '), fecha:$('#sFecha').value||hoy(),
                notas:$('#sNotas').value.trim(), criterio:(S.sesion&&S.sesion.criterio)||'' };
   await fijarUsuario($('#sResp').value);
   await guardarSesion(); pintarHeader(); toast('Sesión guardada');
@@ -774,7 +774,7 @@ async function cerrarFicha(){
   if(e){
     const vacio = !e.niv && !e.adicionales.length && !contarFotos(e.id) && !e.obs;
     if(e.origen==='manual' && vacio){ S.equipos = S.equipos.filter(x=>x.id!==e.id); await store.del('equipos', e.id); }
-    else await putEquipo(e);
+    else await putEquipo(await fusionarSiDuplicado(e));
   }
   $('#sheetEquipo').classList.remove('open'); document.body.style.overflow='';
   S.fichaId=null; render();
@@ -857,7 +857,9 @@ function pintarFicha(){
   $('#fNiv').oninput = ev => {
     const v = ev.target.value.toUpperCase().replace(/[^A-Z0-9-]/g,''); ev.target.value = v;
     if(v.startsWith('SIN-NIV')){ $('#fNivAviso').innerHTML = ''; $('#fPrevio').innerHTML = ''; return; }
-    $('#fNivAviso').innerHTML = v && v.length!==17 ? `<div class="hint" style="color:var(--warn)">Lleva ${v.length} de 17 caracteres.</div>` : '';
+    const enListado = v.length===17 && S.equipos.some(x=>x.id!==S.fichaId && x.niv && norm(x.niv)===norm(v));
+    $('#fNivAviso').innerHTML = v && v.length!==17 ? `<div class="hint" style="color:var(--warn)">Lleva ${v.length} de 17 caracteres.</div>`
+      : enListado ? `<div class="hint" style="color:var(--warn)">Este NIV <b>ya está en la lista</b>: al guardar se une con ese registro, no se duplica. Más fácil: ciérrala y ábrelo desde la lista.</div>` : '';
     if(v.length===17) revisarPrevio(); else $('#fPrevio').innerHTML = '';
   };
   if((e.niv||'').length===17) revisarPrevio();
@@ -914,7 +916,8 @@ async function revisarPrevio(){
          ${e.estado==='encontrado' ? '' : `<button class="btn ok wide" style="margin-top:8px" onclick="marcarYaEncontrado()">Marcar como ya encontrado previamente</button>`}</div>`;
 }
 async function marcarYaEncontrado(){
-  const e = leerCampos(); if(!e || !e.niv){ toast('Captura el NIV del equipo'); return; }
+  let e = leerCampos(); if(!e || !e.niv){ toast('Captura el NIV del equipo'); return; }
+  e = await fusionarSiDuplicado(e);
   const p = await buscarPrevio(e.niv);
   if(!p){ toast('No se encontró un levantamiento previo de este NIV'); return; }
   const r = p.reg;
@@ -936,11 +939,31 @@ async function marcarYaEncontrado(){
    termine escrito de tres formas distintas. */
 let PATIOS_EXTRA = [];
 function patiosDelLevantamiento(){
-  const set = new Set(PATIOS_EXTRA);
-  S.equipos.forEach(e=>{ if(e.patioFisico) set.add(e.patioFisico); });
+  const set = new Set(PATIOS_EXTRA.map(patioCanonico));
+  S.equipos.forEach(e=>{ if(e.patioFisico) set.add(patioCanonico(e.patioFisico)); });
   S.equipos.forEach(e=>{ const u = e.padron && e.padron.ubicacion; if(u) set.add(u); });
-  if(S.sesion && S.sesion.patio) S.sesion.patio.split(' + ').forEach(p=>{ if(p.trim()) set.add(p.trim()); });
+  if(S.sesion && S.sesion.patio) S.sesion.patio.split(' + ').forEach(p=>{ if(p.trim()) set.add(patioCanonico(p.trim())); });
   return [...set].sort((a,b)=>a.localeCompare(b,'es'));
+}
+/* Nombres oficiales de patio: los del levantamiento en la nube y los del listado.
+   "Patio HT (Monterrey)" y "MONTERREY - HT" son el mismo patio: Imágenes HT agrupa
+   por nombre exacto, así que un alias partía las fotos en dos patios. */
+function patiosOficiales(){
+  const set = new Set();
+  const lev = (typeof LEVS!=='undefined' && LEV) ? LEVS.find(l=>l.id===LEV) : null;
+  if(lev && Array.isArray(lev.patios)) lev.patios.forEach(p=>{ if(p) set.add(p); });
+  S.equipos.forEach(e=>{ const u = e.padron && e.padron.ubicacion; if(u) set.add(u); });
+  return [...set];
+}
+function patioCanonico(p){
+  if(!p) return p;
+  const toks = s => new Set(norm(s).split(' ').filter(t=>t && t!=='PATIO' && t!=='DE'));
+  const t = toks(p);
+  for(const o of patiosOficiales()){
+    const u = toks(o);
+    if(u.size===t.size && [...u].every(x=>t.has(x))) return o;
+  }
+  return p;
 }
 function patioPorDefecto(){
   const ps = patiosDelLevantamiento();
@@ -1018,7 +1041,7 @@ function leerCampos(){
   recordar('tipos', e.tipo); recordar('marcas', e.marca);
   e.anio=$('#fAnio').value.trim(); e.ejes=$('#fEjes').value.trim(); e.medidaLlantas=$('#fMedida').value.trim();
   e.zona=$('#fZona').value.trim(); e.clasificacion=$('#fClase').value.trim();
-  const vp = $('#fPatio').value; e.patioFisico = (vp==='__otro__') ? e.patioFisico : vp;
+  const vp = $('#fPatio').value; e.patioFisico = (vp==='__otro__') ? e.patioFisico : patioCanonico(vp);
   e.capturadoPor = usuarioActual() || e.capturadoPor;
   e.estatusFisico=$('#fEstFis').value; e.obs=$('#fObs').value.trim();
   if($('#fMotivo')) e.motivoFaltante=$('#fMotivo').value;
@@ -1026,10 +1049,46 @@ function leerCampos(){
 }
 function persistirFicha(){ const e=fichaActual(); if(e) putEquipo(e); }
 
+/* Un NIV capturado a mano que YA está en el listado no crea otro equipo: sus datos
+   y fotos pasan al registro del listado (conserva cliente, ubicación y estatus del
+   listado, y cuenta como encontrado, no como excedente). Antes el registro manual
+   sustituía al del listado al sincronizar y se perdían esos datos. */
+async function absorberDuplicado(destino, dup){
+  ['tipo','marca','anio','placas','ejes','medidaLlantas','clasificacion','zona','estatusFisico','patioFisico','motivoFaltante']
+    .forEach(k=>{ if(dup[k]) destino[k] = dup[k]; });                     // lo capturado en patio manda
+  if(dup.adicionales && dup.adicionales.length) destino.adicionales = dup.adicionales;
+  if(dup.gps) destino.gps = dup.gps;
+  if(dup.obs && !String(destino.obs||'').includes(dup.obs)) destino.obs = (destino.obs ? destino.obs+' · ' : '') + dup.obs;
+  destino.padron = Object.assign({}, destino.padron, dup.padron);           // el listado conserva sus datos
+  destino.capturadoPor = dup.capturadoPor || destino.capturadoPor;
+  if(dup.estado==='faltante') destino.estado = 'faltante';
+  else if(dup.estado!=='pendiente') destino.estado = (destino.origen==='padron') ? 'encontrado' : 'excedente';
+  destino.ts = dup.ts || destino.ts; destino.dirty = true; destino.actualizado = new Date().toISOString();
+  for(const f of S.fotos.filter(f=>f.refId===dup.id)){                      // sus fotos pasan al registro bueno
+    const rec = await store.get('fotos', f.id);
+    if(rec){ rec.refId = destino.id; await store.put('fotos', rec); }
+    f.refId = destino.id;
+  }
+  await store.put('equipos', destino);
+}
+async function fusionarSiDuplicado(e){
+  if(!e || !e.niv || e.niv.startsWith('SIN-NIV') || e.dirty===false) return e;   // si ya subió, no se toca
+  const otro = S.equipos.find(x=>x.id!==e.id && x.niv && norm(x.niv)===norm(e.niv));
+  if(!otro) return e;
+  const [destino, dup] = (otro.origen==='padron' || e.origen!=='padron') ? [otro, e] : [e, otro];
+  await absorberDuplicado(destino, dup);
+  S.equipos = S.equipos.filter(x=>x.id!==dup.id);
+  await store.del('equipos', dup.id);
+  if(S.fichaId===dup.id) S.fichaId = destino.id;
+  pedirSync();
+  return destino;
+}
+
 async function guardarFicha(cerrar){
-  const e = leerCampos(); if(!e) return;
+  let e = leerCampos(); if(!e) return;
   if(cerrar){
     if(!e.niv){ toast('Captura el NIV del equipo'); return; }
+    e = await fusionarSiDuplicado(e);
     if(e.estado!=='faltante'){ e.estado = (e.origen==='padron') ? 'encontrado' : 'excedente'; e.ts = stamp(); }
   }
   await putEquipo(e);
@@ -2162,22 +2221,26 @@ async function reconciliarIds(){
   if(!sucios.length) return;
   const nivs = [...new Set(sucios.map(e=>e.niv))];
   for(let i=0;i<nivs.length;i+=200){
-    const { data, error } = await SB.from('equipos').select('id,niv')
+    const { data, error } = await SB.from('equipos').select('id,niv,origen,padron')
       .eq('levantamiento_id', LEV).in('niv', nivs.slice(i,i+200));
     if(error) throw error;
     for(const row of (data||[])){
       const local = sucios.find(e=>e.niv===row.niv && e.id!==row.id);
       if(!local) continue;
       const viejo = local.id;
-      if(S.equipos.some(e=>e.id===row.id)){          // ya lo tengo bajado: el local sobra
-        for(const f of S.fotos.filter(f=>f.refId===viejo)){   // sus fotos pasan al bueno
-          const rec = await store.get('fotos', f.id);
-          if(rec){ rec.refId = row.id; await store.put('fotos', rec); }
-          f.refId = row.id;
-        }
+      const bajado = S.equipos.find(e=>e.id===row.id);
+      if(bajado){                                    // ya lo tengo bajado: el local se une a ese
+        await absorberDuplicado(bajado, local);
         S.equipos = S.equipos.filter(e=>e.id!==viejo);
         await store.del('equipos', viejo);
         continue;
+      }
+      /* Adopta el id del servidor SIN perder que venía del listado: si no, el registro
+         manual pisaba al del listado (origen, estado y datos del padrón). */
+      if(row.origen==='padron'){
+        local.origen = 'padron';
+        local.padron = Object.assign({}, row.padron, local.padron);
+        if(local.estado==='excedente') local.estado = 'encontrado';
       }
       await store.del('equipos', viejo);
       local.id = row.id;
@@ -2196,7 +2259,7 @@ async function subirEquipos(){
   for(let i=0;i<sucios.length;i+=100){
     const lote = sucios.slice(i,i+100).map(e=>({
       id:e.id, levantamiento_id:LEV, niv:e.niv, origen:e.origen, estado:e.estado,
-      patio:e.patioFisico||'', clasificacion:e.clasificacion||'', tipo:e.tipo, marca:e.marca, anio:e.anio,
+      patio:patioCanonico(e.patioFisico||''), clasificacion:e.clasificacion||'', tipo:e.tipo, marca:e.marca, anio:e.anio,
       placas:e.placas, ejes:e.ejes, medida_llantas:e.medidaLlantas, zona:e.zona,
       estatus_fisico:e.estatusFisico, motivo_faltante:e.motivoFaltante, obs:e.obs,
       adicionales:e.adicionales, gps:e.gps, padron:e.padron,
@@ -2221,7 +2284,7 @@ async function subirSueltos(){
   const sucios = S.sueltos.filter(x=>x.dirty && x.tipo);
   for(const x of sucios){
     const { error } = await SB.from('sueltos').upsert({
-      id:x.id, levantamiento_id:LEV, patio:x.patio||(S.sesion?S.sesion.patio:''), tipo:x.tipo,
+      id:x.id, levantamiento_id:LEV, patio:patioCanonico(x.patio||(S.sesion?S.sesion.patio:'')), tipo:x.tipo,
       descripcion:x.descripcion, marca:x.marca, medida:x.medida, cantidad:x.cantidad, unidad:x.unidad,
       condicion:x.condicion, zona:x.zona, propietario:x.propietario, obs:x.obs,
       capturado_por:x.capturadoPor||USUARIO, capturado_uid:uidUser()

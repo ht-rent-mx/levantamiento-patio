@@ -1,5 +1,5 @@
 /* Service worker — offline en patio, pero sin quedarse pegado en versiones viejas */
-const VERSION = 'v28-2026-10-08';
+const VERSION = 'v29-2026-10-12';
 const CACHE = 'levantamiento-patio-' + VERSION;
 const LIBS = [
   'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
