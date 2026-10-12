@@ -264,7 +264,7 @@ table.mini td:last-child{text-align:right;font-family:var(--mono);font-weight:70
    ===================================================================== */
 
 /* ------------------------- CATÁLOGOS EDITABLES ---------------------- */
-const APP_VERSION = 'v30 · 12 oct 2026 · padrón desde el inventario';
+const APP_VERSION = 'v31 · 12 oct 2026 · padrón desde el inventario';
 
 const CAT = {
   patios: ["Patio HT (Monterrey)","Patio JJ (Monterrey)","Monterrey - Forza","Monterrey - Tractomundo",
@@ -575,7 +575,7 @@ function vistaSesion(){
 
     <h2 class="sec">Lista a validar (padrón)</h2>
     <div class="card">
-      <p class="hint" style="margin-top:0"><b>Traer del inventario</b> baja los equipos sin entregar del Inventario General, ya separados por patio: solo eliges el patio que vas a levantar. Necesita internet y la sesión de la nube iniciada. También puedes cargar tu Excel (hoja <b>INV</b>) como antes.</p>
+      <p class="hint" style="margin-top:0"><b>Traer del inventario</b> baja los equipos sin entregar del Inventario General (Pendiente, Consigna, Resguardo y Fuera de op), ya separados por patio: solo eliges el patio que vas a levantar. Necesita internet y la sesión de la nube iniciada. También puedes cargar tu Excel (hoja <b>INV</b>) como antes.</p>
       <div class="btnrow">
         <button class="btn primary" onclick="traerDelInventario()">Traer del inventario</button>
         <button class="btn" onclick="$('#fileExcel').click()">Cargar Excel</button>
@@ -1468,7 +1468,9 @@ function pasoEstatus(){
   }
   for(const p of UBIC_SEL){
     if(REGLAS[p]) continue;
-    const pend = [...new Set(filasDePatio(p).map(etiquetaEstatus))].filter(k=>norm(k).includes('PENDIENTE'));
+    const todosEst = [...new Set(filasDePatio(p).map(etiquetaEstatus))];
+    // Del inventario ya vienen solo los sin entregar (Pendiente, Consigna, Resguardo, Fuera de op): entran todos.
+    const pend = PADRON_FUENTE ? todosEst : todosEst.filter(k=>norm(k).includes('PENDIENTE'));
     REGLAS[p] = {todo:false, reglas:[Object.assign(reglaVacia(), {estatus:pend})]};
   }
   for(const p of Object.keys(REGLAS)) if(!UBIC_SEL.has(p)) delete REGLAS[p];
