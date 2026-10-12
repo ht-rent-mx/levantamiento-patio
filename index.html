@@ -264,7 +264,7 @@ table.mini td:last-child{text-align:right;font-family:var(--mono);font-weight:70
    ===================================================================== */
 
 /* ------------------------- CATÁLOGOS EDITABLES ---------------------- */
-const APP_VERSION = 'v29 · 12 oct 2026 · sin duplicados y patio unificado';
+const APP_VERSION = 'v30 · 12 oct 2026 · padrón desde el inventario';
 
 const CAT = {
   patios: ["Patio HT (Monterrey)","Patio JJ (Monterrey)","Monterrey - Forza","Monterrey - Tractomundo",
@@ -575,9 +575,10 @@ function vistaSesion(){
 
     <h2 class="sec">Lista a validar (padrón)</h2>
     <div class="card">
-      <p class="hint" style="margin-top:0">Carga tu Excel de inventario. Se detecta la hoja <b>INV</b> y la fila de encabezados automáticamente; después eliges la ubicación que vas a levantar.</p>
+      <p class="hint" style="margin-top:0"><b>Traer del inventario</b> baja los equipos sin entregar del Inventario General, ya separados por patio: solo eliges el patio que vas a levantar. Necesita internet y la sesión de la nube iniciada. También puedes cargar tu Excel (hoja <b>INV</b>) como antes.</p>
       <div class="btnrow">
-        <button class="btn primary" onclick="$('#fileExcel').click()">Cargar Excel</button>
+        <button class="btn primary" onclick="traerDelInventario()">Traer del inventario</button>
+        <button class="btn" onclick="$('#fileExcel').click()">Cargar Excel</button>
         <button class="btn ghost" onclick="limpiarPadron()">Quitar padrón</button>
       </div>
       <div id="padronInfo" style="margin-top:10px"></div>
@@ -1349,13 +1350,53 @@ $('#fileExcel').onchange = async ev => {
       if(r>=0){ datos = mapear(aoa, r); break; }
     }
     if(!datos || !datos.length){ toast('No encontré una columna NIV en el archivo'); return; }
-    PADRON_TMP = datos;
+    PADRON_TMP = datos; PADRON_FUENTE = '';
     UBIC_SEL = new Set(); COND_COL = null; REGLAS = {};
     aprenderDelArchivo(datos);
     mostrarSelectorUbicacion();
   }catch(err){ console.error(err); toast('No se pudo leer el archivo'); }
   ev.target.value='';
 };
+/* ============ PADRÓN DIRECTO DEL INVENTARIO GENERAL (sin Excel) =============
+   La función padron-levantamiento (proyecto del inventario) devuelve, solo lectura,
+   los equipos cuyo estatus de entrega NO es ENTREGADO. Valida la sesión de la nube
+   de esta app. Los patios salen del campo Ubicación del inventario. Después sigue el
+   mismo flujo que con Excel: Paso 1 patios, Paso 2 reglas por patio, crear levantamiento. */
+const INV_FN = 'https://qqusajxzcyyfuvhslexe.supabase.co/functions/v1/padron-levantamiento';
+let PADRON_FUENTE = '';
+async function traerDelInventario(){
+  if(!SB || !SESION_NUBE){ toast('Primero inicia sesión en la nube (tarjeta Nube, arriba)', 4000); return; }
+  if(!navigator.onLine){ toast('Sin conexión: conéctate para traer el inventario', 4000); return; }
+  progreso('Trayendo el inventario…', 'Equipos sin entregar, por patio');
+  try{
+    const { data } = await SB.auth.getSession();
+    const tk = data && data.session && data.session.access_token;
+    if(!tk) throw new Error('Vuelve a iniciar sesión en la nube');
+    const r = await fetch(INV_FN, {method:'POST', headers:{Authorization:'Bearer '+tk, 'Content-Type':'application/json'}, body:'{}'});
+    const j = await r.json().catch(()=>({}));
+    if(!r.ok || j.error) throw new Error(j.error || ('Error '+r.status));
+    const T = v => (v==null ? '' : String(v)).trim();
+    const datos = (j.equipos||[]).filter(x=>x.niv).map(x=>({
+      niv:T(x.niv).toUpperCase(), tipo:T(x.tipo), marca:T(x.marca), anio:T(x.anio), placas:T(x.placas),
+      ejes:T(x.ejes), medidaLlantas:'', ejeRetractil:x.eje_retractil?'SI':'', ubicacion:T(x.ubicacion),
+      cliente:T(x.cliente), estatusAsignacion:T(x.estatus_asignacion), estatusEntrega:T(x.estatus_entrega),
+      extra:{'NIV':T(x.niv),'PRODUCTO':T(x.tipo),'MARCA':T(x.marca),'AÑO':T(x.anio),'NUEVO O USADO':T(x.condicion),
+             'UBICACIÓN':T(x.ubicacion),'ESTATUS DE ENTREGA':T(x.estatus_entrega),'ESTATUS DE ASIGNACIÓN':T(x.estatus_asignacion),
+             'CLIENTE':T(x.cliente),'PLACAS':T(x.placas),'EJES':T(x.ejes)}
+    }));
+    cerrarProgreso();
+    if(!datos.length){ toast('El inventario no devolvió equipos sin entregar'); return; }
+    PADRON_COLS = ['NIV','PRODUCTO','MARCA','AÑO','NUEVO O USADO','UBICACIÓN','ESTATUS DE ENTREGA','ESTATUS DE ASIGNACIÓN','CLIENTE','PLACAS','EJES'];
+    PADRON_TMP = datos; UBIC_SEL = new Set(); COND_COL = null; REGLAS = {};
+    PADRON_FUENTE = 'Inventario General · ' + new Date(j.generado||Date.now()).toLocaleString('es-MX',{hour12:false});
+    aprenderDelArchivo(datos);
+    mostrarSelectorUbicacion();
+    toast(`${datos.length} equipos sin entregar en ${new Set(datos.map(d=>d.ubicacion)).size} patios`, 4000);
+  }catch(err){
+    cerrarProgreso(); console.error(err);
+    toast('No se pudo traer el inventario: ' + (err.message||err), 5000);
+  }
+}
 function detectarEncabezado(aoa){
   for(let i=0;i<Math.min(20,aoa.length);i++){
     const fila = (aoa[i]||[]).map(norm);
@@ -1391,7 +1432,7 @@ function mostrarSelectorUbicacion(){
   const lista = Object.entries(grupos).sort((a,b)=>b[1]-a[1]);
   const sel = lista.filter(([u])=>UBIC_SEL.has(u)).reduce((s,[,n])=>s+n,0);
   $('#padronInfo').innerHTML = `
-    <div class="banner b-info"><b>${PADRON_TMP.length}</b> equipos leídos. <b>Paso 1:</b> marca los patios de la visita. Puedes elegir varios.</div>
+    <div class="banner b-info"><b>${PADRON_TMP.length}</b> equipos ${PADRON_FUENTE ? 'sin entregar<br><span class="hint">'+esc(PADRON_FUENTE)+'</span><br>' : 'leídos. '}<b>Paso 1:</b> marca los patios de la visita. Puedes elegir varios.</div>
     <div class="chips">${lista.map(([u,n])=>`<button class="chip ${UBIC_SEL.has(u)?'on':''}" onclick="togglePatio(${JSON.stringify(u).replace(/"/g,'&quot;')})">${esc(u)}<span class="n">${n}</span></button>`).join('')}</div>
     <div class="row" style="margin-top:10px">
       <button class="btn sm ghost" onclick="todosLosPatios()">${UBIC_SEL.size===lista.length?'Quitar todos':'Marcar todos'}</button>
