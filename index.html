@@ -264,7 +264,7 @@ table.mini td:last-child{text-align:right;font-family:var(--mono);font-weight:70
    ===================================================================== */
 
 /* ------------------------- CATÁLOGOS EDITABLES ---------------------- */
-const APP_VERSION = 'v32 · 12 oct 2026 · padrón desde Plataforma HT';
+const APP_VERSION = 'v33 · 15 oct 2026 · confirmación antes de marcar NIV ilegible';
 
 const CAT = {
   patios: ["Patio HT (Monterrey)","Patio JJ (Monterrey)","Monterrey - Forza","Monterrey - Tractomundo",
@@ -994,6 +994,12 @@ async function otroPatio(idSelect){
 /* Para equipos cuyo NIV no se puede leer en patio: se registra con folio
    provisional para no perder las fotos ni el hallazgo. */
 function sinNivLegible(){
+  const actual = ($('#fNiv').value || '').trim().toUpperCase();
+  if(actual.startsWith('SIN-NIV')) return;   // ya tiene folio provisional
+  const msg = actual
+    ? `Este equipo tiene capturado el NIV ${actual}.\n\nSi continúas, ese NIV se reemplaza por un folio provisional (SIN-NIV) y el equipo deja de aparecer al buscarlo por su NIV.\n\n¿Seguro que el NIV NO se puede leer?`
+    : '¿Seguro que el NIV de este equipo NO se puede leer?\n\nQuedará registrado con un folio provisional (SIN-NIV) hasta que lo identifiquen.';
+  if(!confirm(msg)) return;
   const usados = S.equipos.map(e=>norm(e.niv)).filter(v=>v.startsWith('SIN NIV'));
   let n = 1;
   while(usados.includes(norm('SIN-NIV-'+String(n).padStart(3,'0')))) n++;
