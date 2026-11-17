@@ -264,7 +264,7 @@ table.mini td:last-child{text-align:right;font-family:var(--mono);font-weight:70
    ===================================================================== */
 
 /* ------------------------- CATÁLOGOS EDITABLES ---------------------- */
-const APP_VERSION = 'v33 · 15 oct 2026 · confirmación antes de marcar NIV ilegible';
+const APP_VERSION = 'v34 · 17 nov 2026 · carga solo Pendientes de entrega, patios según Ubicación del inventario';
 
 const CAT = {
   patios: ["Patio HT (Monterrey)","Patio JJ (Monterrey)","Monterrey - Forza","Monterrey - Tractomundo",
@@ -301,7 +301,9 @@ function aprenderDelArchivo(filas){
   };
   CAT.tipos  = frec('tipo');
   CAT.marcas = frec('marca');
-  frec('ubicacion').forEach(u=>{ if(!CAT.patios.some(p=>norm(p)===norm(u))) CAT.patios.push(u); });
+  // Los patios son las ubicaciones que presenta el inventario (reemplazan la lista fija)
+  const ubic = frec('ubicacion');
+  if(ubic.length) CAT.patios = ubic.sort((a,b)=>a.localeCompare(b,'es'));
   guardarCatalogos();
 }
 
@@ -575,7 +577,7 @@ function vistaSesion(){
 
     <h2 class="sec">Lista a validar (padrón)</h2>
     <div class="card">
-      <p class="hint" style="margin-top:0"><b>Traer del inventario</b> baja los equipos sin entregar del Inventario General (Pendiente, Consigna, Resguardo y Fuera de op), ya separados por patio: solo eliges el patio que vas a levantar. Necesita internet y la sesión de la nube iniciada. También puedes cargar tu Excel (hoja <b>INV</b>) como antes.</p>
+      <p class="hint" style="margin-top:0"><b>Traer del inventario</b> baja del Inventario General <b>solo los equipos Pendientes de entrega</b>, separados por patio según su Ubicación en el inventario: solo eliges el patio que vas a levantar. No se filtra por nuevo/usado, marca ni otra clasificación. Necesita internet y la sesión de la nube iniciada. También puedes cargar tu Excel (hoja <b>INV</b>) como antes.</p>
       <div class="btnrow">
         <button class="btn primary" onclick="traerDelInventario()">Traer del inventario</button>
         <button class="btn" onclick="$('#fileExcel').click()">Cargar Excel</button>
@@ -1356,9 +1358,12 @@ $('#fileExcel').onchange = async ev => {
       if(r>=0){ datos = mapear(aoa, r); break; }
     }
     if(!datos || !datos.length){ toast('No encontré una columna NIV en el archivo'); return; }
-    PADRON_TMP = datos; PADRON_FUENTE = '';
-    UBIC_SEL = new Set(); COND_COL = null; REGLAS = {};
     aprenderDelArchivo(datos);
+    // Misma regla que con el inventario: solo Pendientes de entrega
+    const pend = datos.filter(r=>esPendiente(r.estatusEntrega));
+    if(!pend.length){ toast('El archivo no tiene equipos Pendientes de entrega'); return; }
+    PADRON_TMP = pend; PADRON_FUENTE = '';
+    UBIC_SEL = new Set(); COND_COL = null; REGLAS = {};
     mostrarSelectorUbicacion();
   }catch(err){ console.error(err); toast('No se pudo leer el archivo'); }
   ev.target.value='';
@@ -1373,7 +1378,7 @@ let PADRON_FUENTE = '';
 async function traerDelInventario(){
   if(!SB || !SESION_NUBE){ toast('Primero inicia sesión en la nube (tarjeta Nube, arriba)', 4000); return; }
   if(!navigator.onLine){ toast('Sin conexión: conéctate para traer el inventario', 4000); return; }
-  progreso('Trayendo el inventario…', 'Equipos sin entregar, por patio');
+  progreso('Trayendo el inventario…', 'Pendientes de entrega, por patio');
   try{
     const { data } = await SB.auth.getSession();
     const tk = data && data.session && data.session.access_token;
@@ -1382,7 +1387,12 @@ async function traerDelInventario(){
     const j = await r.json().catch(()=>({}));
     if(!r.ok || j.error) throw new Error(j.error || ('Error '+r.status));
     const T = v => (v==null ? '' : String(v)).trim();
-    const datos = (j.equipos||[]).filter(x=>x.niv).map(x=>({
+    // Regla vigente: en cualquier patio solo se cargan los Pendientes de entrega,
+    // sin importar condición (nuevo/usado), marca ni ninguna otra clasificación.
+    const todosInv = (j.equipos||[]).filter(x=>x.niv);
+    // Los patios se toman de TODAS las ubicaciones del inventario, aunque hoy no tengan pendientes
+    aprenderDelArchivo(todosInv.map(x=>({tipo:T(x.tipo), marca:T(x.marca), ubicacion:T(x.ubicacion)})));
+    const datos = todosInv.filter(x=>esPendiente(x.estatus_entrega)).map(x=>({
       niv:T(x.niv).toUpperCase(), tipo:T(x.tipo), marca:T(x.marca), anio:T(x.anio), placas:T(x.placas),
       ejes:T(x.ejes), medidaLlantas:'', ejeRetractil:x.eje_retractil?'SI':'', ubicacion:T(x.ubicacion),
       cliente:T(x.cliente), estatusAsignacion:T(x.estatus_asignacion), estatusEntrega:T(x.estatus_entrega),
@@ -1391,13 +1401,12 @@ async function traerDelInventario(){
              'CLIENTE':T(x.cliente),'PLACAS':T(x.placas),'EJES':T(x.ejes)}
     }));
     cerrarProgreso();
-    if(!datos.length){ toast('El inventario no devolvió equipos sin entregar'); return; }
+    if(!datos.length){ toast('El inventario no tiene equipos Pendientes de entrega'); return; }
     PADRON_COLS = ['NIV','PRODUCTO','MARCA','AÑO','NUEVO O USADO','UBICACIÓN','ESTATUS DE ENTREGA','ESTATUS DE ASIGNACIÓN','CLIENTE','PLACAS','EJES'];
     PADRON_TMP = datos; UBIC_SEL = new Set(); COND_COL = null; REGLAS = {};
     PADRON_FUENTE = 'Inventario General · ' + new Date(j.generado||Date.now()).toLocaleString('es-MX',{hour12:false});
-    aprenderDelArchivo(datos);
     mostrarSelectorUbicacion();
-    toast(`${datos.length} equipos sin entregar en ${new Set(datos.map(d=>d.ubicacion)).size} patios`, 4000);
+    toast(`${datos.length} equipos Pendientes de entrega en ${new Set(datos.map(d=>d.ubicacion)).size} patios`, 4000);
   }catch(err){
     cerrarProgreso(); console.error(err);
     toast('No se pudo traer el inventario: ' + (err.message||err), 5000);
@@ -1438,7 +1447,7 @@ function mostrarSelectorUbicacion(){
   const lista = Object.entries(grupos).sort((a,b)=>b[1]-a[1]);
   const sel = lista.filter(([u])=>UBIC_SEL.has(u)).reduce((s,[,n])=>s+n,0);
   $('#padronInfo').innerHTML = `
-    <div class="banner b-info"><b>${PADRON_TMP.length}</b> equipos ${PADRON_FUENTE ? 'sin entregar<br><span class="hint">'+esc(PADRON_FUENTE)+'</span><br>' : 'leídos. '}<b>Paso 1:</b> marca los patios de la visita. Puedes elegir varios.</div>
+    <div class="banner b-info"><b>${PADRON_TMP.length}</b> equipos ${PADRON_FUENTE ? 'pendientes de entrega<br><span class="hint">'+esc(PADRON_FUENTE)+'</span><br>' : 'leídos. '}<b>Paso 1:</b> marca los patios de la visita. Puedes elegir varios.</div>
     <div class="chips">${lista.map(([u,n])=>`<button class="chip ${UBIC_SEL.has(u)?'on':''}" onclick="togglePatio(${JSON.stringify(u).replace(/"/g,'&quot;')})">${esc(u)}<span class="n">${n}</span></button>`).join('')}</div>
     <div class="row" style="margin-top:10px">
       <button class="btn sm ghost" onclick="todosLosPatios()">${UBIC_SEL.size===lista.length?'Quitar todos':'Marcar todos'}</button>
@@ -1453,11 +1462,12 @@ function todosLosPatios(){
   mostrarSelectorUbicacion();
 }
 const etiquetaEstatus = r => (r.estatusEntrega||'').trim() || '(sin estatus)';
+const esPendiente = v => norm(v||'').includes('PENDIENTE');
 const etiquetaClase = r => (COND_COL && r.extra ? (r.extra[COND_COL]||'').trim() : '') || '(sin dato)';
 const COL_CLASE = 'NUEVO O USADO';   // columna E del inventario
 const PISTAS_CLASE = ['NUEVO O USADO','CONDICION','CLASIFIC','SEMINUEVO','TIPO DE UNIDAD','CATEGORIA','ESTATUS DE UNIDAD'];
 /* ---- Reglas por patio: cada patio lleva sus propios criterios ------- */
-const filasDePatio = p => PADRON_TMP.filter(r => (r.ubicacion||'(sin ubicación)') === p);
+const filasDePatio = p => PADRON_TMP.filter(r => (r.ubicacion||'(sin ubicación)') === p && esPendiente(r.estatusEntrega));
 const filasUbicacion = () => UBIC_SEL.size ? PADRON_TMP.filter(r=>UBIC_SEL.has(r.ubicacion||'(sin ubicación)')) : PADRON_TMP;
 const etiquetaMarca = r => (r.marca||'').trim() || '(sin marca)';
 const CAMPOS = {
@@ -1474,9 +1484,8 @@ function pasoEstatus(){
   }
   for(const p of UBIC_SEL){
     if(REGLAS[p]) continue;
-    const todosEst = [...new Set(filasDePatio(p).map(etiquetaEstatus))];
-    // Del inventario ya vienen solo los sin entregar (Pendiente, Consigna, Resguardo, Fuera de op): entran todos.
-    const pend = PADRON_FUENTE ? todosEst : todosEst.filter(k=>norm(k).includes('PENDIENTE'));
+    // Regla única para todos los patios: solo Pendientes de entrega, sin otra clasificación
+    const pend = [...new Set(filasDePatio(p).map(etiquetaEstatus))];
     REGLAS[p] = {todo:false, reglas:[Object.assign(reglaVacia(), {estatus:pend})]};
   }
   for(const p of Object.keys(REGLAS)) if(!UBIC_SEL.has(p)) delete REGLAS[p];
@@ -1494,13 +1503,8 @@ function pintarReglas(){
   const patios = [...UBIC_SEL];
   const total = patios.reduce((n,p)=>n+filasSeleccionadasDe(p).length, 0);
   $('#padronInfo').innerHTML = `
-    <div class="banner b-info"><b>Paso 2:</b> qué vas a contabilizar en cada patio.
-      Dentro de un patio puedes armar varias reglas: un equipo entra si cumple <b>alguna</b> de ellas.</div>
-    ${COND_COL ? `<p class="hint">Nuevo o usado se lee de la columna <b>${esc(COND_COL)}</b>.
-      <select onchange="cambiarColumnaClase(this.value)" style="margin-top:6px">
-        <option value="">— Sin columna de nuevo/usado —</option>
-        ${PADRON_COLS.map(h=>`<option value="${esc(h)}"${h===COND_COL?' selected':''}>${esc(h)}</option>`).join('')}
-      </select></p>` : ''}
+    <div class="banner b-info"><b>Paso 2:</b> en cada patio se cargan <b>solo los equipos Pendientes de entrega</b>,
+      sin importar si son nuevos, usados o seminuevos, ni la marca.</div>
     ${patios.map(bloquePatio).join('')}
     <div class="row" style="margin-top:12px">
       <button class="btn sm ghost" onclick="mostrarSelectorUbicacion()">← Cambiar patios</button>
@@ -1530,19 +1534,12 @@ async function guardarSeleccionExcel(){
 }
 
 function bloquePatio(p){
-  const cfg = REGLAS[p], filas = filasDePatio(p), n = filasSeleccionadasDe(p).length;
+  const n = filasSeleccionadasDe(p).length;
   return `<div class="card" style="margin:12px 0">
     <div class="row">
       <b style="font-size:15px">${esc(p)}</b><div class="sp"></div>
-      <span class="tag ${n?'t-enc':'t-pend'}">${n} de ${filas.length}</span>
+      <span class="tag ${n?'t-enc':'t-pend'}">${n} pendientes de entrega</span>
     </div>
-    <div class="chips" style="margin-top:8px">
-      <button class="chip ${cfg.todo?'on':''}" onclick="patioTodo(${JSON.stringify(p).replace(/"/g,'&quot;')})">Todo el patio</button>
-      <button class="chip ${cfg.todo?'':'on'}" onclick="patioFiltrar(${JSON.stringify(p).replace(/"/g,'&quot;')})">Con reglas</button>
-    </div>
-    ${cfg.todo ? `<p class="hint">Entra todo lo que el sistema tiene en este patio, sin importar estatus, marca ni condición.</p>`
-      : cfg.reglas.map((g,i)=>bloqueRegla(p,g,i)).join('') +
-        `<button class="btn ghost wide sm" style="margin-top:8px" onclick="agregarRegla(${JSON.stringify(p).replace(/"/g,'&quot;')})">+ Otra regla en este patio</button>`}
   </div>`;
 }
 function bloqueRegla(p, g, i){
