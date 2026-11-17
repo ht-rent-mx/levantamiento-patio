@@ -3,22 +3,27 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#16232B">
+<meta name="theme-color" content="#0B3D66">
 <title>Levantamiento de Patio — HT Rent</title>
 <link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Saira:ital,wght@1,700;1,800&display=swap" rel="stylesheet">
 <style>
+/* Colores y tipografía de Plataforma HT (ht.css): azul marino, verde lima y blanco */
 :root{
-  --bg:#E9EAE5; --panel:#FFFFFF; --panel2:#F4F5F1;
-  --ink:#11181D; --muted:#63707A; --line:#D3D8D2;
-  --amber:#E08A00; --amber-soft:#FDF1DC;
-  --steel:#16232B; --steel-2:#22333D;
-  --ok:#17795A; --ok-soft:#E2F2EB;
-  --bad:#B3261E; --bad-soft:#FBE7E5;
-  --warn:#B45309;
-  --r:10px;
-  --display:ui-sans-serif,"Archivo Narrow","Roboto Condensed","Segoe UI",system-ui,sans-serif;
-  --body:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-  --mono:ui-monospace,"Roboto Mono","SFMono-Regular",Menlo,Consolas,monospace;
+  --navy:#0B3D66; --navy-2:#0F4C7E; --edge:#4B5B7C;
+  --lime:#3CE81E; --lime-ink:#1B7F0A; --lime-soft:#E4FADF;
+  --bg:#EDF0F5; --panel:#FFFFFF; --panel2:#F5F7FA;
+  --ink:#15203B; --title:#1B2A5C; --muted:#5A6680; --line:#D5DBE5; --pend:#E1E6EE;
+  --amber:#F2B233; --amber-soft:#FDF1D6;
+  --steel:#0B3D66; --steel-2:#0F4C7E;
+  --ok:#1B7F0A; --ok-soft:#E4FADF;
+  --bad:#C63A2F; --bad-soft:#FBE6E4;
+  --warn:#9A6A00;
+  --r:4px;
+  --display:"Saira","Arial Narrow",Arial,sans-serif;
+  --body:"Barlow","Segoe UI",Roboto,Arial,sans-serif;
+  --mono:Consolas,"Courier New",ui-monospace,monospace;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0}
@@ -30,40 +35,41 @@ body{
 .wrap{max-width:600px;margin:0 auto;padding:0 12px}
 
 /* ---------- Encabezado: banda de cinta reflejante ---------- */
-header{background:var(--steel);color:#fff;position:sticky;top:0;z-index:40}
-.tape{height:8px;background:repeating-linear-gradient(115deg,var(--amber) 0 14px,#2B3A44 14px 28px)}
+header{background:var(--navy);color:#fff;position:sticky;top:0;z-index:40;border-bottom:5px solid var(--lime)}
+.tape{display:none}
 .hbar{display:flex;align-items:center;gap:10px;padding:10px 12px;max-width:600px;margin:0 auto}
-.hbar h1{font-family:var(--display);font-size:15px;letter-spacing:.10em;text-transform:uppercase;margin:0;font-weight:800}
-.hbar .sub{font-size:11.5px;color:#9FB2BD;letter-spacing:.04em;margin-top:1px}
-.hbar .right{margin-left:auto;text-align:right;font-family:var(--mono);font-size:11px;color:#9FB2BD}
-.progress{height:5px;background:#2B3A44}
-.progress > i{display:block;height:100%;background:var(--amber);width:0;transition:width .3s}
+.hbar h1{font-family:var(--display);font-style:italic;font-size:19px;letter-spacing:.01em;text-transform:uppercase;margin:0;font-weight:800;line-height:1.05}
+.hbar h1 .ht{color:var(--lime)}
+.hbar .sub{font-size:12px;color:#B9C8DC;letter-spacing:.04em;margin-top:2px}
+.hbar .right{margin-left:auto;text-align:right;font-family:var(--mono);font-size:11px;color:#B9C8DC}
+.progress{height:4px;background:var(--navy-2)}
+.progress > i{display:block;height:100%;background:var(--lime);width:0;transition:width .3s}
 
 /* ---------- Barra inferior ---------- */
 nav.tabs{
   position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--steel);
   display:grid;grid-template-columns:repeat(4,1fr);
-  padding-bottom:env(safe-area-inset-bottom);border-top:1px solid #2B3A44
+  padding-bottom:env(safe-area-inset-bottom);border-top:4px solid var(--lime)
 }
 nav.tabs button{
-  background:none;border:0;color:#8FA3AF;padding:9px 4px 10px;font-family:var(--display);
-  font-size:11px;letter-spacing:.09em;text-transform:uppercase;font-weight:700;cursor:pointer;
+  background:none;border:0;color:#B9C8DC;padding:9px 4px 10px;font-family:var(--body);
+  font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;cursor:pointer;
   display:flex;flex-direction:column;align-items:center;gap:3px
 }
 nav.tabs button svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.7}
-nav.tabs button.on{color:var(--amber)}
+nav.tabs button.on{color:var(--lime)}
 
 /* ---------- Bloques ---------- */
 .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px;margin:12px 0}
 .card.tight{padding:10px}
-h2.sec{font-family:var(--display);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px;font-weight:800}
-.eyebrow{font-family:var(--display);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:800}
-label{display:block;font-size:12px;font-weight:700;letter-spacing:.02em;color:var(--muted);margin:10px 0 4px;text-transform:uppercase}
+h2.sec{font-family:var(--body);font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px;font-weight:700}
+.eyebrow{font-family:var(--body);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:500}
+label{display:block;font-size:13px;font-weight:600;color:var(--ink);margin:12px 0 5px}
 input,select,textarea{
-  width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;
+  width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:var(--r);background:#fff;
   font-size:16px;font-family:inherit;color:var(--ink)
 }
-input:focus,select:focus,textarea:focus{outline:2px solid var(--amber);outline-offset:1px;border-color:var(--amber)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--navy);box-shadow:0 0 0 3px rgba(60,232,30,.3)}
 textarea{min-height:70px;resize:vertical}
 .mono{font-family:var(--mono)}
 input.mono{letter-spacing:.06em}
@@ -75,15 +81,15 @@ input.mono{letter-spacing:.06em}
 
 /* ---------- Botones ---------- */
 button.btn{
-  font-family:var(--display);font-size:13px;letter-spacing:.07em;text-transform:uppercase;font-weight:800;
-  padding:12px 14px;border-radius:8px;border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer
+  font-family:var(--body);font-size:14px;letter-spacing:.02em;font-weight:700;
+  padding:12px 14px;border-radius:var(--r);border:1px solid var(--line);background:#fff;color:var(--ink);cursor:pointer
 }
-button.btn.primary{background:var(--amber);border-color:var(--amber);color:#241503}
-button.btn.dark{background:var(--steel);border-color:var(--steel);color:#fff}
-button.btn.ok{background:var(--ok);border-color:var(--ok);color:#fff}
+button.btn.primary{background:var(--lime);border-color:var(--lime);color:#0A2A0E}
+button.btn.dark{background:var(--navy);border-color:var(--edge);color:#fff}
+button.btn.ok{background:var(--lime);border-color:var(--lime);color:#0A2A0E}
 button.btn.bad{background:var(--bad);border-color:var(--bad);color:#fff}
 button.btn.ghost{background:transparent}
-button.btn.sm{padding:8px 10px;font-size:11.5px}
+button.btn.sm{padding:8px 11px;font-size:13px}
 button.btn:disabled{opacity:.45}
 button.btn.wide{width:100%}
 .btnrow{display:flex;gap:8px}
@@ -92,25 +98,27 @@ button.btn.wide{width:100%}
 /* ---------- Chips / estados ---------- */
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chip{
-  border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 12px;font-size:12.5px;
-  font-weight:700;cursor:pointer;white-space:nowrap
+  border:1px solid var(--line);background:#fff;border-radius:var(--r);padding:7px 12px;font-size:13px;
+  font-weight:600;cursor:pointer;white-space:nowrap
 }
-.chip.on{background:var(--steel);border-color:var(--steel);color:#fff}
+.chip.on{background:var(--navy);border-color:var(--navy);color:#fff}
+.chip.on .n{background:var(--lime);color:#0A2A0E;opacity:1;padding:0 6px;border-radius:8px}
 .chip .n{font-family:var(--mono);opacity:.7;margin-left:4px}
-.tag{display:inline-flex;align-items:center;gap:5px;font-family:var(--display);font-size:10.5px;font-weight:800;
-  letter-spacing:.1em;text-transform:uppercase;padding:4px 8px;border-radius:4px;border:1px solid}
-.t-pend{background:#EEF0EC;border-color:#D3D8D2;color:#5B676F}
-.t-enc{background:var(--ok-soft);border-color:#B7DDCD;color:var(--ok)}
-.t-falt{background:var(--bad-soft);border-color:#F0C4C0;color:var(--bad)}
-.t-exc{background:var(--amber-soft);border-color:#F2D9A8;color:#8A5300}
+.tag{display:inline-flex;align-items:center;gap:5px;font-family:var(--body);font-size:11.5px;font-weight:600;
+  letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:3px;border:1px solid}
+.t-pend{background:var(--pend);border-color:var(--pend);color:var(--muted)}
+.t-enc{background:var(--lime-soft);border-color:var(--lime);color:var(--lime-ink)}
+.t-falt{background:var(--bad-soft);border-color:var(--bad);color:var(--bad)}
+.t-prev{background:var(--navy);border-color:var(--navy);color:#fff}
+.t-exc{background:var(--amber-soft);border-color:var(--amber);color:#7A5200}
 
 /* ---------- Lista de equipos ---------- */
 .item{
   background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--line);
   border-radius:var(--r);padding:11px 12px;margin-bottom:8px;cursor:pointer;display:block;width:100%;text-align:left
 }
-.item.pendiente{border-left-color:#B9C1BA}
-.item.encontrado{border-left-color:var(--ok)}
+.item.pendiente{border-left-color:var(--pend)}
+.item.encontrado{border-left-color:var(--lime)}
 .item.faltante{border-left-color:var(--bad)}
 .item.excedente{border-left-color:var(--amber)}
 .item .niv{font-family:var(--mono);font-size:14.5px;font-weight:700;letter-spacing:.04em;word-break:break-all}
@@ -121,7 +129,7 @@ button.btn.wide{width:100%}
 /* ---------- Ficha (pantalla completa) ---------- */
 .sheet{position:fixed;inset:0;background:var(--bg);z-index:60;overflow-y:auto;display:none}
 .sheet.open{display:block}
-.sheet-head{position:sticky;top:0;background:var(--steel);color:#fff;z-index:5}
+.sheet-head{position:sticky;top:0;background:var(--navy);color:#fff;z-index:5;border-bottom:5px solid var(--lime)}
 .sheet-head .hbar h1{font-size:13px}
 .sheet-body{max-width:600px;margin:0 auto;padding:0 12px 120px}
 .sheet-foot{
@@ -137,22 +145,22 @@ button.btn.wide{width:100%}
   border:1px dashed var(--line);border-radius:8px;background:var(--panel2);padding:8px 6px;text-align:center;
   cursor:pointer;position:relative;min-height:86px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px
 }
-.angle.has{border-style:solid;border-color:var(--ok);background:#fff}
+.angle.has{border-style:solid;border-color:var(--lime);background:#fff}
 .angle .lbl{font-size:11px;font-weight:700;line-height:1.2;color:var(--muted)}
 .angle.has .lbl{color:var(--ink)}
-.angle .badge{position:absolute;top:-7px;right:-7px;background:var(--ok);color:#fff;font-family:var(--mono);
+.angle .badge{position:absolute;top:-7px;right:-7px;background:var(--lime);color:#0A2A0E;font-family:var(--mono);
   font-size:11px;font-weight:700;border-radius:999px;min-width:20px;height:20px;display:flex;align-items:center;justify-content:center;padding:0 5px}
 .angle img{width:100%;height:52px;object-fit:cover;border-radius:5px}
 .angle svg{width:22px;height:22px;stroke:var(--muted);fill:none;stroke-width:1.6}
-#fichaBody .angles .angle:first-child{border-color:var(--amber);background:var(--amber-soft)}
-#fichaBody .angles .angle:first-child .lbl{color:#8A5300}
-#fichaBody .angles .angle:first-child.has{border-color:var(--ok);background:#fff}
+#fichaBody .angles .angle:first-child{border-color:var(--navy);background:#E8EEF5}
+#fichaBody .angles .angle:first-child .lbl{color:var(--navy)}
+#fichaBody .angles .angle:first-child.has{border-color:var(--lime);background:#fff}
 .thumbs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
 .thumb{position:relative}
 .thumb img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:6px;border:1px solid var(--line)}
 .visor{position:fixed;inset:0;background:#0B1116;z-index:300;display:flex;flex-direction:column}
 .visor-top{display:flex;align-items:center;gap:10px;padding:12px 14px;color:#fff;font-size:12.5px;
-  background:var(--steel);padding-top:calc(12px + env(safe-area-inset-top))}
+  background:var(--navy);padding-top:calc(12px + env(safe-area-inset-top))}
 .visor-top span{flex:1;font-family:var(--mono)}
 .visor-top button{background:none;border:1px solid #3A4A55;color:#fff;border-radius:6px;width:34px;height:34px;font-size:16px;cursor:pointer}
 .visor-img{flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:8px}
@@ -167,21 +175,22 @@ button.btn.wide{width:100%}
 .add-row{border:1px solid var(--line);border-radius:8px;padding:10px;margin-bottom:8px;background:var(--panel2)}
 .add-row .top{display:flex;align-items:center;gap:8px}
 .add-row .nom{font-weight:700;font-size:14px}
-.add-row .qty{font-family:var(--mono);font-weight:700;background:var(--steel);color:#fff;border-radius:5px;padding:2px 7px;font-size:13px}
+.add-row .qty{font-family:var(--mono);font-weight:700;background:var(--navy);color:#fff;border-radius:5px;padding:2px 7px;font-size:13px}
 .stepper{display:flex;align-items:center;gap:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff}
 .stepper button{width:42px;height:42px;border:0;background:#fff;font-size:20px;cursor:pointer;color:var(--ink)}
 .stepper input{width:56px;border:0;text-align:center;font-family:var(--mono);font-weight:700;padding:0}
 
 /* ---------- Varios ---------- */
 .banner{border-radius:var(--r);padding:11px 12px;font-size:13px;margin:12px 0;border:1px solid}
-.b-warn{background:var(--amber-soft);border-color:#F0D9AC;color:#7A4A00}
-.b-info{background:#E9EFF2;border-color:#CBDAE1;color:#2C4551}
+.b-warn{background:var(--amber-soft);border-color:var(--amber);border-left:5px solid var(--amber);color:#6B4A00}
+.b-info{background:#E8EEF5;border-color:#C6D3E3;border-left:5px solid var(--navy);color:var(--title)}
+.b-ok{background:var(--lime-soft);border-color:var(--lime);border-left:5px solid var(--lime);color:var(--lime-ink)}
 .kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center}
 .kpi div{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 4px}
-.kpi b{display:block;font-family:var(--mono);font-size:19px;line-height:1.1}
-.kpi span{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
+.kpi b{display:block;font-family:var(--display);font-style:italic;font-weight:800;font-size:22px;line-height:1.1;color:var(--title)}
+.kpi span{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
 .empty{text-align:center;color:var(--muted);padding:34px 16px;font-size:14px}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:96px;background:var(--steel);color:#fff;
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:96px;background:var(--navy);color:#fff;border-left:5px solid var(--lime);
   padding:11px 16px;border-radius:8px;font-size:13.5px;z-index:200;max-width:92%;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,.25)}
 .hidden{display:none!important}
 table.mini{width:100%;border-collapse:collapse;font-size:13px}
@@ -196,7 +205,7 @@ table.mini td:last-child{text-align:right;font-family:var(--mono);font-weight:70
   <div class="tape"></div>
   <div class="hbar">
     <div>
-      <h1>Levantamiento de patio</h1>
+      <h1><span class="ht">HT</span> Levantamiento de patio</h1>
       <div class="sub" id="hSub">Sin sesión activa</div>
     </div>
     <div class="right"><span id="hCount"></span><br><span id="hSync" style="font-size:10px"></span></div>
@@ -223,7 +232,7 @@ table.mini td:last-child{text-align:right;font-family:var(--mono);font-weight:70
   <div class="sheet-head">
     <div class="tape"></div>
     <div class="hbar">
-      <button class="btn sm ghost" style="color:#fff;border-color:#3A4A55" onclick="cerrarFicha()">← Volver</button>
+      <button class="btn sm ghost" style="color:#fff;border-color:var(--edge)" onclick="cerrarFicha()">← Volver</button>
       <div class="sp"></div>
       <div class="right" id="fichaTag"></div>
     </div>
@@ -240,7 +249,7 @@ table.mini td:last-child{text-align:right;font-family:var(--mono);font-weight:70
   <div class="sheet-head">
     <div class="tape"></div>
     <div class="hbar">
-      <button class="btn sm ghost" style="color:#fff;border-color:#3A4A55" onclick="cerrarSuelto()">← Volver</button>
+      <button class="btn sm ghost" style="color:#fff;border-color:var(--edge)" onclick="cerrarSuelto()">← Volver</button>
       <div class="sp"></div>
       <div class="right">Adicional suelto</div>
     </div>
@@ -264,7 +273,7 @@ table.mini td:last-child{text-align:right;font-family:var(--mono);font-weight:70
    ===================================================================== */
 
 /* ------------------------- CATÁLOGOS EDITABLES ---------------------- */
-const APP_VERSION = 'v36 · 17 nov 2026 · fecha del levantamiento nuevo y botón Crear como principal';
+const APP_VERSION = 'v37 · 17 nov 2026 · diseño Plataforma HT; equipos ya levantados: fecha y «Sí está en el patio» sin fotos';
 
 const CAT = {
   patios: ["Patio HT (Monterrey)","Patio JJ (Monterrey)","Monterrey - Forza","Monterrey - Tractomundo",
@@ -507,6 +516,7 @@ function vistaEquipos(){
     ${lista.length ? lista.map(itemEquipo).join('') :
       `<div class="empty">${S.equipos.length ? 'Ningún equipo con ese filtro.' : 'Carga tu lista desde Excel en la pestaña Sesión, o agrega equipos manualmente.'}</div>`}
     <div style="height:20px"></div>`;
+  precargarPrevios();
   const q = $('#qBusca');
   q.oninput = e => { S.busca = e.target.value; const p=e.target.selectionStart; vistaEquipos(); const n=$('#qBusca'); n.focus(); n.setSelectionRange(p,p); };
 }
@@ -519,10 +529,58 @@ function itemEquipo(e){
     <div class="foot">
       <span class="tag ${tags[0]}">${tags[1]}</span>
       ${e.origen==='padron'?'':'<span class="tag t-exc">Manual</span>'}
-      ${e.padron && e.padron.previo ? '<span class="tag t-enc">Ya levantado antes</span>' : ''}
+      ${tagPrevio(e)}
       <span class="sp"></span>
       <span class="count">${na} adic · ${nf} fotos</span>
     </div></button>`;
+}
+function tagPrevio(e){
+  const pv = (e.padron && e.padron.previo) || (e.niv && PREVIOS[e.niv]) || null;
+  if(!pv) return '';
+  const f = pv.fecha ? fechaCorta(pv.fecha) : '';
+  return `<span class="tag t-prev">Levantado ${esc(f)}${pv.fotos?' · '+pv.fotos+' fotos':''}</span>`;
+}
+/* Consulta en bloque qué equipos de la lista ya se levantaron antes, para
+   mostrar la fecha en la lista sin abrir cada ficha. */
+let PREVIOS_LEV = null;
+async function precargarPrevios(){
+  if(!SB || !SESION_NUBE || !navigator.onLine) return;
+  const clave = (LEV||'') + '|' + S.equipos.length;
+  if(PREVIOS_LEV === clave) return; PREVIOS_LEV = clave;
+  const nivs = [...new Set(S.equipos.map(e=>e.niv).filter(n=>n && n.length===17 && !(n in PREVIOS)))];
+  if(!nivs.length) return;
+  try{
+    const regs = [];
+    for(let i=0;i<nivs.length;i+=150){
+      let q = SB.from('equipos')
+        .select('id,niv,estado,patio,clasificacion,tipo,marca,anio,placas,ejes,medida_llantas,zona,estatus_fisico,adicionales,levantamiento_id,actualizado_en')
+        .in('niv', nivs.slice(i,i+150)).in('estado',['encontrado','excedente']);
+      if(LEV) q = q.neq('levantamiento_id', LEV);
+      const { data, error } = await q; if(error) return;
+      regs.push(...(data||[]));
+    }
+    const fotosPor = {};
+    const ids = regs.map(r=>r.id);
+    for(let i=0;i<ids.length;i+=150){
+      const { data } = await SB.from('fotos').select('equipo_id').in('equipo_id', ids.slice(i,i+150));
+      (data||[]).forEach(f=>{ fotosPor[f.equipo_id]=(fotosPor[f.equipo_id]||0)+1; });
+    }
+    const levIds = [...new Set(regs.map(r=>r.levantamiento_id))].filter(id=>!LEVS.some(l=>l.id===id));
+    let extra = [];
+    if(levIds.length){ const { data } = await SB.from('levantamientos').select('id,nombre,fecha').in('id', levIds); extra = data||[]; }
+    const levPor = id => LEVS.find(l=>l.id===id) || extra.find(l=>l.id===id);
+    const porNiv = {};
+    regs.forEach(r=>{ (porNiv[r.niv] = porNiv[r.niv] || []).push(r); });
+    nivs.forEach(n=>{
+      const rs = (porNiv[n]||[]).sort((a,b)=>String(b.actualizado_en).localeCompare(String(a.actualizado_en)));
+      if(!rs.length){ PREVIOS[n] = null; return; }
+      const reg = rs[0], lv = levPor(reg.levantamiento_id);
+      PREVIOS[n] = { reg, fotos: rs.reduce((t,r)=>t+(fotosPor[r.id]||0),0), nombre: lv?lv.nombre:'',
+                     fecha: (lv && lv.fecha) || String(reg.actualizado_en||'').slice(0,10) };
+    });
+    if(document.activeElement && document.activeElement.id==='qBusca') return;   // no interrumpir la búsqueda
+    vistaEquipos();
+  }catch(err){ console.warn('precargarPrevios', err); }
 }
 function setFiltro(f){ S.filtro=f; vistaEquipos(); }
 function setFiltroPatio(p){ S.filtroPatio = S.filtroPatio===p ? '' : p; vistaEquipos(); }
@@ -843,6 +901,7 @@ function pintarFicha(){
       </div>
     </div>
 
+    <div id="secFotos">
     <h2 class="sec">Fotografías</h2>
     <div class="card">
       <div class="angles">${CAT.angulos.map(a=>botonAngulo(e.id,a)).join('')}</div>
@@ -852,6 +911,7 @@ function pintarFicha(){
         <button class="btn sm" onclick="pedirGaleria('${e.id}','angGal')">Desde galería</button>
       </div>
       <p class="hint">Para fotos que te compartieron y no tomaste tú, por ejemplo de un patio en resguardo ajeno.</p>
+    </div>
     </div>
 
     ${e.estado==='faltante'?`<div class="card"><label>Motivo por el que no se localizó</label>
@@ -909,16 +969,22 @@ async function revisarPrevio(){
   const p = await buscarPrevio(niv);
   if(!$('#fNiv') || $('#fNiv').value!==niv || S.fichaId!==e.id) return;   // cambió mientras consultaba
   const hecho = !!(e.padron && e.padron.previo);
+  const secF = $('#secFotos');
+  if(secF) secF.style.display = '';
   if(p===undefined){ box.innerHTML = ''; return; }                        // sin red o sin sesión en la nube
   if(p===null){
     box.innerHTML = `<div class="banner b-warn" style="margin:8px 0 0">Este NIV <b>no se ha levantado antes</b>: es equipo nuevo. Toma sus fotos para que entren al repositorio de Imágenes HT al sincronizar.</div>`;
     return;
   }
-  const info = `Ya levantado el <b>${esc(fechaCorta(p.fecha))}</b>${p.nombre?' · '+esc(p.nombre):''}${p.reg.patio?' · '+esc(p.reg.patio):''} · <b>${p.fotos}</b> fotos ya en Imágenes HT.`;
+  const info = `Ya levantado en patio el <b>${esc(fechaCorta(p.fecha))}</b>${p.nombre?' · '+esc(p.nombre):''}${p.reg.patio?' · '+esc(p.reg.patio):''} · <b>${p.fotos}</b> fotos ya en Imágenes HT.`;
+  // Si ya tiene fotos no tiene caso tomar más: solo se confirma que sigue en patio
+  const conFotos = p.fotos > 0;
+  if(secF && conFotos && !contarFotos(e.id)) secF.style.display = 'none';
   box.innerHTML = hecho
-    ? `<div class="banner b-info" style="margin:8px 0 0">✔ Marcado como <b>ya encontrado previamente</b>. ${info}</div>`
+    ? `<div class="banner b-ok" style="margin:8px 0 0">✔ <b>Confirmado en patio</b> (sale en el reporte como encontrado). ${info}</div>`
     : `<div class="banner b-info" style="margin:8px 0 0">${info}
-         ${e.estado==='encontrado' ? '' : `<button class="btn ok wide" style="margin-top:8px" onclick="marcarYaEncontrado()">Marcar como ya encontrado previamente</button>`}</div>`;
+         ${conFotos ? '<br>Ya cuenta con fotos: no hace falta tomar más, solo confirma que sí está en el patio.' : '<br>No tiene fotos: tómaselas al confirmarlo.'}
+         <button class="btn ok wide" style="margin-top:8px" onclick="marcarYaEncontrado()">✔ Sí está en el patio</button></div>`;
 }
 async function marcarYaEncontrado(){
   let e = leerCampos(); if(!e || !e.niv){ toast('Captura el NIV del equipo'); return; }
@@ -938,7 +1004,7 @@ async function marcarYaEncontrado(){
   e.capturadoPor = usuarioActual() || e.capturadoPor;
   await putEquipo(e);
   $('#sheetEquipo').classList.remove('open'); document.body.style.overflow=''; S.fichaId=null; render();
-  toast('Marcado como ya encontrado previamente');
+  toast('Confirmado en patio · sale en el reporte como encontrado');
 }
 /* Los patios salen del propio levantamiento: nada de texto libre que
    termine escrito de tres formas distintas. */
@@ -1838,15 +1904,17 @@ async function generarExcel(){
   const estLbl = {pendiente:'SIN REVISAR',encontrado:'ENCONTRADO',faltante:'FALTANTE',excedente:'EXCEDENTE'};
   const hEq = ['Estado','Origen','Patio','Patio distinto al sistema','NIV','Nuevo o usado','Tipo','Marca','Año','Placas','Ejes','Medida llanta',
     'Zona en patio','Estatus físico','Adicionales (detalle)','Piezas adic.','Fotos','Motivo faltante','Observaciones',
-    'Capturó','Fecha captura','GPS','Ubicación en sistema','Cliente','Estatus asignación','Estatus entrega'];
+    'Capturó','Fecha captura','GPS','Ubicación en sistema','Cliente','Estatus asignación','Estatus entrega','Levantado antes (fecha)','Fotos previas en Imágenes HT'];
   const rEq = S.equipos.map(e=>{
     const pd = e.padron||{};
+    const pv = pd.previo || (e.niv && PREVIOS[e.niv]) || null;
     return [estLbl[e.estado], e.origen==='padron'?'Listado':'Manual', e.patioFisico, movido(e)?'SÍ':'', e.niv, e.clasificacion, e.tipo, e.marca,
       e.anio, e.placas, e.ejes, e.medidaLlantas, e.zona, e.estatusFisico,
       e.adicionales.map(a=>`${a.tipo} (${a.cantidad})`).join('; '),
       e.adicionales.reduce((s,a)=>s+(+a.cantidad||0),0), contarFotos(e.id), e.motivoFaltante, e.obs,
       e.capturadoPor, e.ts, e.gps?`${e.gps.lat.toFixed(5)}, ${e.gps.lng.toFixed(5)}`:'',
-      pd.ubicacion||'', pd.cliente||'', pd.estatusAsignacion||'', pd.estatusEntrega||''];
+      pd.ubicacion||'', pd.cliente||'', pd.estatusAsignacion||'', pd.estatusEntrega||'',
+      pv && pv.fecha ? String(pv.fecha).slice(0,10) : '', pv ? (pv.fotos||0) : ''];
   });
   const wsE = XLSX.utils.aoa_to_sheet([hEq,...rEq]);
   wsE['!cols']=[{wch:13},{wch:9},{wch:20},{wch:12},{wch:20},{wch:14},{wch:20},{wch:12},{wch:7},{wch:11},{wch:6},{wch:13},
@@ -2602,7 +2670,7 @@ function pintarNube(){
   if(ind){
     const pend = SB && SESION_NUBE && LEV ? pendientes() : 0;
     ind.textContent = !SESION_NUBE ? 'local' : SYNC.corriendo ? 'subiendo…' : pend ? `${pend} en cola` : 'al día';
-    ind.style.color = !SESION_NUBE ? '#9FB2BD' : pend ? 'var(--amber)' : '#7FD1AE';
+    ind.style.color = !SESION_NUBE ? '#B9C8DC' : pend ? 'var(--amber)' : 'var(--lime)';
   }
 }
 window.addEventListener('online', ()=>{ toast('Conexión recuperada'); sincronizar(); });
