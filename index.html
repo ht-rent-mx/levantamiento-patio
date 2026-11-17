@@ -264,7 +264,7 @@ table.mini td:last-child{text-align:right;font-family:var(--mono);font-weight:70
    ===================================================================== */
 
 /* ------------------------- CATÁLOGOS EDITABLES ---------------------- */
-const APP_VERSION = 'v35 · 17 nov 2026 · carga todo lo no entregado (pendiente, consigna, resguardo, fuera de op, en tránsito), patios según Ubicación';
+const APP_VERSION = 'v36 · 17 nov 2026 · fecha del levantamiento nuevo y botón Crear como principal';
 
 const CAT = {
   patios: ["Patio HT (Monterrey)","Patio JJ (Monterrey)","Monterrey - Forza","Monterrey - Tractomundo",
@@ -315,7 +315,9 @@ const uid = () => (crypto.randomUUID ? crypto.randomUUID()
       const r = Math.random()*16|0; return (c==='x'?r:(r&0x3|0x8)).toString(16); }));
 const esc = s => String(s??"").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm = s => String(s??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toUpperCase().replace(/[^A-Z0-9]/g," ").replace(/\s+/g," ").trim();
-const hoy = () => new Date().toISOString().slice(0,10);
+// Fecha local (México), no UTC: en la tarde-noche UTC ya es "mañana"
+const hoy = () => { const d = new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); };
+let FECHA_NUEVO_LEV = '';   // fecha elegida para el levantamiento nuevo
 const stamp = () => new Date().toLocaleString('es-MX',{hour12:false});
 let cajaProg = null;
 function progreso(texto, sub){
@@ -1515,9 +1517,15 @@ function pintarReglas(){
     </div>
     <button class="btn ghost wide sm" style="margin-top:8px" onclick="guardarSeleccionExcel()" ${total?'':'disabled'}>Guardar esta selección en Excel</button>
     <p class="hint">Genera un archivo con solo esos ${total} equipos y todas las columnas del original. La próxima vez cargas ese archivo y ya no filtras nada.</p>
-    ${SESION_NUBE ? `<button class="btn dark wide sm" style="margin-top:8px" onclick="crearLevantamientoNube()" ${total?'':'disabled'}>Crear levantamiento nuevo (${total})</button>
-      ${LEV?`<button class="btn primary wide sm" style="margin-top:6px" onclick="agregarAlLevantamiento()" ${total?'':'disabled'}>Agregar estos ${total} al levantamiento activo</button>
-        <p class="hint">Suma tu lista a <b>${esc(LEV_NOMBRE||'el levantamiento en uso')}</b>, saltando los NIV que ya estén. Así varios pueden cargar patios distintos y terminar en un solo reporte.</p>`
+    ${SESION_NUBE ? `<div class="card" style="margin-top:12px">
+        <label>Fecha del levantamiento nuevo</label>
+        <input type="date" id="fNuevoLev" value="${esc(FECHA_NUEVO_LEV||hoy())}" onchange="FECHA_NUEVO_LEV=this.value">
+        <p class="hint">Si lo arrancas otro día (por ejemplo mañana), elige esa fecha aquí.</p>
+        <button class="btn primary wide" style="margin-top:8px" onclick="crearLevantamientoNube()" ${total?'':'disabled'}>Crear levantamiento nuevo con ${total} equipos</button>
+        <p class="hint">Crea un levantamiento aparte y lo deja como el activo en este dispositivo y en los celulares.</p>
+      </div>
+      ${LEV?`<button class="btn ghost wide sm" style="margin-top:6px" onclick="agregarAlLevantamiento()" ${total?'':'disabled'}>O agregar estos ${total} al levantamiento activo (${esc(LEV_NOMBRE||'')})</button>
+        <p class="hint">Solo úsalo si quieres sumarlos a <b>${esc(LEV_NOMBRE||'el levantamiento en uso')}</b>, saltando los NIV que ya estén.</p>`
       :`<p class="hint">Sube la lista a Supabase: los demás celulares la ven al iniciar sesión, sin pasar por GitHub.</p>`}`
     : `<button class="btn dark wide sm" style="margin-top:8px" onclick="publicarParaCelular()" ${total?'':'disabled'}>Generar padron.json para el celular (${total})</button>
       <p class="hint">Descarga el archivo, súbelo a la raíz del repositorio y al abrir la liga en el celular la lista se carga sola.</p>`}`;
@@ -2128,11 +2136,12 @@ async function crearLevantamientoNube(){
   const filas = seleccionActual();
   if(!filas.length){ toast('No hay equipos seleccionados'); return; }
   const patios = [...UBIC_SEL];
-  const nombre = prompt('Nombre del levantamiento:', `${patios.join(' + ')||'Patios'} ${hoy()}`);
+  const fecha = (($('#fNuevoLev')&&$('#fNuevoLev').value) || FECHA_NUEVO_LEV || hoy());
+  const nombre = prompt('Nombre del levantamiento:', `${patios.join(' + ')||'Patios'} ${fecha}`);
   if(!nombre) return;
   toast('Creando levantamiento…');
   const { data: lev, error } = await SB.from('levantamientos')
-    .insert({nombre, patios, criterio:textoCriterio(), fecha:hoy(), creado_por:SESION_NUBE.user.id})
+    .insert({nombre, patios, criterio:textoCriterio(), fecha, creado_por:SESION_NUBE.user.id})
     .select().single();
   if(error){ toast('No se pudo crear: '+error.message, 5000); return; }
 
@@ -2150,7 +2159,8 @@ async function crearLevantamientoNube(){
   await store.put('kv',{k:'levNombre', v:lev.nombre});
   await usarLevantamiento(lev.id, true);
   await listarLevantamientos();
-  PADRON_TMP = null; UBIC_SEL = new Set(); COND_COL = null; REGLAS = {};
+  PADRON_TMP = null; UBIC_SEL = new Set(); COND_COL = null; REGLAS = {}; FECHA_NUEVO_LEV = '';
+  render();
   toast(`Levantamiento creado con ${filasDB.length} equipos`, 4000);
 }
 async function agregarAlLevantamiento(){
